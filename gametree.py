@@ -28,9 +28,9 @@ class GameTree:
         if node['id'] in self._nodes and not override:
             raise ValueError('wrong id of node with no override permission')
         # add node
-        self.load_node_data(node)
+        self._load_node_data(node)
 
-    def load_node_data(self, node):
+    def _load_node_data(self, node):
         # append node to list
         self._nodes[node.id] = node
         # add parenthood

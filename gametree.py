@@ -1,20 +1,38 @@
 import json
 
 
+# ======================================================================================================================
 # game tree object
 class GameTree:
+    # ---------------------------------- OBJECT PROPERTIES -------------------------------------------------------------
     # procedure of printing object properties
     def __repr__(self):
-        # return json.dumps(self.__dict__)
         return json.dumps(self.__dict__, indent=4)
 
     # initialize object
     def __init__(self):
+
+        """
+        GameTree object contains:
+        dictionary of nodes:
+            id of the node,
+            value of node (the prize for reaching the node),
+            parents of node - can be multiple, represented by list of ids,
+            children of node - can be multiple, represented by list of ids,
+            probability of node - 1 means there is no random choice!,
+            branch: totals of branch, to avoid tree walking
+                total value of branch
+                probability of reaching this node in game
+        list of groups,
+        list of leafs, calculated on demand
+        """
+
+        # dictionary of nodes
         self._nodes = {
             'root': {
                 'value': 0,
-                'parents': {},
-                'children': {},
+                'parents': [],
+                'children': [],
                 'probability': 1,
                 'branch': {
                     'value': 0,
@@ -27,8 +45,9 @@ class GameTree:
         # dictionary of leafs
         self._leafs = []
 
-    # add node method
+    # ---------------------------------- ADD NODES ---------------------------------------------------------------------
     def add_node(self, node: dict, override=False):
+        """ add node method. Runs basic validation before adding. """
         # check if it is not overriding existing node
         if node.get('id') is not None:
             if node['id'] in self._nodes and not override:
@@ -36,37 +55,87 @@ class GameTree:
         else:
             raise ValueError('no id for node provided')
 
-        # add node:
         # append node to list
         id_ = node['id']
         del node['id']
 
-        # default values for node
+        # set default values for node
         node['value'] = 0 if node.get('value') is None else node['value']
-        node['parents'] = {} if node.get('parents') is None else node['parents']
-        node['children'] = {} if node.get('children') is None else node['children']
+        node['parents'] = [] if node.get('parents') is None else node['parents']
+        node['children'] = [] if node.get('children') is None else node['children']
         node['probability'] = 1 if node.get('probability') is None else node['probability']
         node['branch'] = {} if node.get('branch') is None else node['branch']
         node['branch']['value'] = 0 if node['branch'].get('value') is None else node['branch']['value']
         node['branch']['probability'] = 0 \
             if node['branch'].get('probability') is None else node['branch']['probability']
 
-        self._nodes[id_] = node
         # add parenthood
         for parent in node['parents']:
-            self._nodes[parent]['children'] = node
+            self._nodes[parent]['children'].append(id_)
 
-        # calculate total probability of node
+        # calculate total probability of node:
+        # total probability equals sum of probabilities of parents multiplied by probability of node
+        branch_probability = 0
+        for parent in node['parents']:
+            branch_probability += self._nodes[parent]['branch']['probability']
+        node['branch']['probability'] = branch_probability * node['probability']
 
-        # calculate total node's value
+        # calculate total node's value - sum of all previous totals: TODO? does this make sense?
+        branch_value = 0
+        for parent in node['parents']:
+            branch_value += self._nodes[parent]['branch']['value']
+        node['branch']['value'] = branch_value + node['value']
 
-    # return list of leafs
-    def get_leafs(self):
+        # add node
+        self._nodes[id_] = node
+
+    # ---------------------------------- OBJECT BASIC METHODS ----------------------------------------------------------
+    # -------------- LEAFS -------------
+    def calculate_leafs(self):
+        """ calculate inner list of leafs ids """
         self._leafs = [node for node in self._nodes if not self._nodes[node]['children']]
+
+    def get_leafs(self) -> list:
+        """ return list of leafs ids """
+        return self._leafs[:]
+
+    # -------------- GROUPS ------------
+    def set_group(self, group: list):
+        """ add list of ids to new group """
+        self._groups.append(group)
+
+    def get_groups(self) -> list:
+        """ return list of groups """
+        return self._groups[:]
+
+    # ---------------------------------- TREE CALCULATIONS -------------------------------------------------------------
+    def exp(self) -> float:
+        """ return expected value of tree """
+        # collect leafs
+        self.get_leafs()
+
+        exp = 0
+        # calculate expected value
+        for leaf in self._leafs:
+            exp += self._nodes[leaf]['branch']['value'] * self._nodes[leaf]['branch']['probability']
+        return exp / len(self._leafs)
+
+    def get_income_for_path(self, path: list) -> float:
+        """ return income for path - 'root' should be shipped! """
+        current_node = 'root'
+        for node in path:
+            if node not in self._nodes[current_node]['children']:
+                raise IndexError('could not find connection from %s to %s' % (current_node, node))
+            else:
+                current_node = '%s' % node
+        return self._nodes[current_node]['value']
+    # ==================================================================================================================
 
 
 # testing section
 if __name__ == '__main__':
+
+    # EXAMPLE USAGE OF GAMETREE:
 
     # plant a tree
     tree = GameTree()
@@ -74,13 +143,20 @@ if __name__ == '__main__':
     tree.add_node({
             'id': '1',
             'value': 2,
-            'parents': {'root'}
+            'parents': ['root']
     })
     tree.add_node({
             'id': '2',
             'value': 5,
-            'parents': {'root'}
+            'parents': ['root']
     })
 
-    # WTF TODO
-    # print(tree)
+    print('tree visualisation:\n%s\n' % tree)
+
+    tree.calculate_leafs()
+    print('tree leafs are:\n%s\n' % tree.get_leafs())
+
+    print('tree expected value is %s\n' % tree.exp())
+
+    path_ = ['1']
+    print('tree value for path %s\n is %s\n' % (path_, tree.get_income_for_path(path_)))

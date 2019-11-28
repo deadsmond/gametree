@@ -35,10 +35,10 @@ class GameTree:
             ----------
             value : float
                 value of node (the prize for reaching the node)
-            parents : list
-                parents of node - can be multiple, represented by list of ids
-            children : list
-                children of node - can be multiple, represented by list of ids
+            parents : dict
+                parents of node - can be multiple, represented by dict of ids and connection values
+            children : dict
+                children of node - can be multiple, represented by dict of ids and connection values
             probability : float
                 probability of node - 1 means there is no random choice
             branch : dict
@@ -54,8 +54,8 @@ class GameTree:
         self._nodes = {
             'root': {
                 'value': 0,
-                'parents': [],
-                'children': [],
+                'parents': {},
+                'children': {},
                 'probability': 1,
                 'branch': {
                     'value': 0,
@@ -68,7 +68,7 @@ class GameTree:
         # dictionary of leafs
         self._leafs = [] if leafs is None else leafs
 
-    # ---------------------------------- ADD NODES ---------------------------------------------------------------------
+    # ---------------------------------- NODES -------------------------------------------------------------------------
     def add_node(self, node: dict, override=False):
         """
         add node method. Runs basic validation before adding.
@@ -89,8 +89,8 @@ class GameTree:
 
         # set default values for node
         node['value'] = 0 if node.get('value') is None else node['value']
-        node['parents'] = [] if node.get('parents') is None else node['parents']
-        node['children'] = [] if node.get('children') is None else node['children']
+        node['parents'] = {} if node.get('parents') is None else node['parents']
+        node['children'] = {} if node.get('children') is None else node['children']
         node['probability'] = 1 if node.get('probability') is None else node['probability']
         node['branch'] = {} if node.get('branch') is None else node['branch']
         node['branch']['value'] = 0 if node['branch'].get('value') is None else node['branch']['value']
@@ -99,7 +99,8 @@ class GameTree:
 
         # add parenthood
         for parent in node['parents']:
-            self._nodes[parent]['children'].append(id_)
+            # noinspection PyTypeChecker
+            self._nodes[parent]['children'][id_] = str(node['parents'][parent])
 
         # calculate total probability of node:
         # total probability equals sum of probabilities of parents multiplied by probability of node
@@ -117,7 +118,29 @@ class GameTree:
         # add node
         self._nodes[id_] = node
 
+    def copy_node(self, from_: str, to_: str):
+        """
+        create a copy of node's properties in another node
+
+        :param str from_: origin node of properties
+        :param str to_: destination node for properties
+        """
+        self._nodes[to_] = dict(self._nodes[from_])
+
     # ---------------------------------- OBJECT BASIC METHODS ----------------------------------------------------------
+    @staticmethod
+    def _get_key(obj: dict, val: str) -> list:
+        """
+        get list of keys with specified value from obj dictionary
+        :param dict obj: chosen dictionary
+        :param str val: specified value
+        """
+        sublist = [key for (key, value) in obj.items() if value == val]
+        if sublist:
+            return sublist
+        else:
+            raise ValueError('key with value %s does not exist in %s' % (val, obj))
+
     # -------------- LEAFS -------------
     def calculate_leafs(self):
         """ calculate inner list of leafs ids """
@@ -151,26 +174,35 @@ class GameTree:
             exp += self._nodes[leaf]['branch']['value'] * self._nodes[leaf]['branch']['probability']
         return exp / len(self._leafs)
 
-    def get_income_for_path(self, path: list) -> float:
+    def get_income_for_path(self, path: list, mode: str = 'nodes') -> float:
         """
         return income for path - 'root' should be skipped!
         :param list path: list of id's you want to make path with
+        :param str mode: mode of search, 'nodes' - search path via nodes id, 'moves' - search path via player choices
         """
-        current_node = 'root'
-        for node in path:
-            if node not in self._nodes[current_node]['children']:
-                raise IndexError('could not find connection from %s to %s' % (current_node, node))
-            else:
-                current_node = '%s' % node
+        if mode == 'nodes':
+            current_node = 'root'
+            for node in path:
+                if node not in self._nodes[current_node]['children']:
+                    raise IndexError('could not find connection from %s to %s' % (current_node, node))
+                else:
+                    current_node = '%s' % node
+
+        elif mode == 'moves':
+            current_node = 'root'
+            for val in path:
+                key = self._get_key(obj=self._nodes[current_node]['children'], val=val)
+                current_node = '%s' % key[0]
+        else:
+            raise ValueError('mode variable is not "nodes" nor "moves"')
         return self._nodes[current_node]['value']
     # ==================================================================================================================
 
 
-# testing section
+# EXAMPLE USAGE OF GAME TREE:
 if __name__ == '__main__':
 
-    # EXAMPLE USAGE OF GAMETREE:
-
+    # print documentation of class
     help(GameTree)
 
     # plant a tree
@@ -178,21 +210,92 @@ if __name__ == '__main__':
     # add nodes
     tree.add_node({
             'id': '1',
-            'value': 2,
-            'parents': ['root']
+            'value': 0,
+            'parents': {'root': 'L'}
     })
     tree.add_node({
             'id': '2',
-            'value': 5,
-            'parents': ['root']
+            'value': 0,
+            'parents': {'root': 'P'}
+    })
+    tree.add_node({
+        'id': '3',
+        'value': 2,
+        'parents': {'1': 'a'}
+    })
+    tree.add_node({
+        'id': '4',
+        'value': 1,
+        'parents': {'1': 'b'}
+    })
+    tree.add_node({
+        'id': '5',
+        'value': 1,
+        'parents': {'2': 'a'}
+    })
+    tree.add_node({
+        'id': '6',
+        'value': 0,
+        'parents': {'2': 'b'}
+    })
+    tree.add_node({
+        'id': '7',
+        'value': 0,
+        'parents': {'6': 'L'}
+    })
+    tree.add_node({
+        'id': '8',
+        'value': 0,
+        'parents': {'6': 'P'}
+    })
+    tree.add_node({
+        'id': '9',
+        'value': 2,
+        'parents': {'7': 'L'}
+    })
+    tree.add_node({
+        'id': '10',
+        'value': 1,
+        'parents': {'7': 'P'}
+    })
+    tree.add_node({
+        'id': '11',
+        'value': -2,
+        'parents': {'8': 'L'}
+    })
+    tree.add_node({
+        'id': '12',
+        'value': 3,
+        'parents': {'8': 'P'}
     })
 
+    # add groups
+    tree.set_group(['1', '2'])
+    tree.set_group(['7', '8'])
+
+    # tests:
+    # print
     print('tree visualisation:\n%s\n' % tree)
 
+    # leafs:
     tree.calculate_leafs()
     print('tree leafs are:\n%s\n' % tree.get_leafs())
 
+    # value of tree
     print('tree expected value is %s\n' % tree.exp())
 
-    path_ = ['1']
+    # paths:
+    # correct path example - nodes
+    path_ = ['2', '6', '8', '12']
     print('tree value for path\n%s\nis %s\n' % (path_, tree.get_income_for_path(path_)))
+
+    # correct path example - moves
+    path_ = ['P', 'b', 'L', 'P']
+    print('tree value for path\n%s\nis %s\n' % (path_, tree.get_income_for_path(path=path_, mode='moves')))
+
+    # wrong path example - no connection between 5 and 8
+    path_ = ['2', '5', '8', '12']
+    try:
+        print('tree value for path\n%s\nis %s\n' % (path_, tree.get_income_for_path(path_)))
+    except IndexError as e:
+        print(e)

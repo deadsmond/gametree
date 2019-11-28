@@ -10,24 +10,47 @@ class GameTree:
         return json.dumps(self.__dict__, indent=4)
 
     # initialize object
-    def __init__(self):
-
+    def __init__(self, nodes: dict = None, groups: list = None, leafs: list = None):
         """
-        GameTree object contains:
+        GameTree class used to represent game tree:
+
+        Attributes
+        ----------
+        nodes : dict
+            dictionary of nodes;
+        groups : list
+            list of groups
+        leafs : list
+            list of leafs, calculated on demand
+        """
+
+        '''
         dictionary of nodes:
-            id of the node,
-            value of node (the prize for reaching the node),
-            parents of node - can be multiple, represented by list of ids,
-            children of node - can be multiple, represented by list of ids,
-            probability of node - 1 means there is no random choice!,
-            branch: totals of branch, to avoid tree walking
-                total value of branch
-                probability of reaching this node in game
-        list of groups,
-        list of leafs, calculated on demand
-        """
+        Attributes
+        ----------
+        node : dict
+            dictionary representing node;
 
-        # dictionary of nodes
+            Attributes
+            ----------
+            value : float
+                value of node (the prize for reaching the node)
+            parents : list
+                parents of node - can be multiple, represented by list of ids
+            children : list
+                children of node - can be multiple, represented by list of ids
+            probability : float
+                probability of node - 1 means there is no random choice
+            branch : dict
+                totals of branch, to avoid tree walking
+
+                Attributes
+                ----------
+                value : float
+                    total value of branch
+                probability : float
+                    probability of reaching this node in game
+        '''
         self._nodes = {
             'root': {
                 'value': 0,
@@ -39,15 +62,20 @@ class GameTree:
                     'probability': 1
                 }
             }
-        }
+        } if nodes is None else nodes
         # list of lists of knowledge groups
-        self._groups = []
+        self._groups = [] if groups is None else groups
         # dictionary of leafs
-        self._leafs = []
+        self._leafs = [] if leafs is None else leafs
 
     # ---------------------------------- ADD NODES ---------------------------------------------------------------------
     def add_node(self, node: dict, override=False):
-        """ add node method. Runs basic validation before adding. """
+        """
+        add node method. Runs basic validation before adding.
+
+        :param dict node: dictionary of node's data
+        :param bool override: control variable allowing to overwrite node
+        """
         # check if it is not overriding existing node
         if node.get('id') is not None:
             if node['id'] in self._nodes and not override:
@@ -101,7 +129,10 @@ class GameTree:
 
     # -------------- GROUPS ------------
     def set_group(self, group: list):
-        """ add list of ids to new group """
+        """
+        add list of ids to new group
+        :param list group: list of id's you want to create group with
+        """
         self._groups.append(group)
 
     def get_groups(self) -> list:
@@ -121,7 +152,10 @@ class GameTree:
         return exp / len(self._leafs)
 
     def get_income_for_path(self, path: list) -> float:
-        """ return income for path - 'root' should be shipped! """
+        """
+        return income for path - 'root' should be skipped!
+        :param list path: list of id's you want to make path with
+        """
         current_node = 'root'
         for node in path:
             if node not in self._nodes[current_node]['children']:
@@ -136,6 +170,8 @@ class GameTree:
 if __name__ == '__main__':
 
     # EXAMPLE USAGE OF GAMETREE:
+
+    help(GameTree)
 
     # plant a tree
     tree = GameTree()
@@ -159,4 +195,4 @@ if __name__ == '__main__':
     print('tree expected value is %s\n' % tree.exp())
 
     path_ = ['1']
-    print('tree value for path %s\n is %s\n' % (path_, tree.get_income_for_path(path_)))
+    print('tree value for path\n%s\nis %s\n' % (path_, tree.get_income_for_path(path_)))

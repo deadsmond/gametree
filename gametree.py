@@ -210,12 +210,10 @@ if __name__ == '__main__':
     # add nodes
     tree.add_node({
             'id': '1',
-            'value': 0,
             'parents': {'root': 'L'}
     })
     tree.add_node({
             'id': '2',
-            'value': 0,
             'parents': {'root': 'P'}
     })
     tree.add_node({
@@ -235,17 +233,14 @@ if __name__ == '__main__':
     })
     tree.add_node({
         'id': '6',
-        'value': 0,
         'parents': {'2': 'b'}
     })
     tree.add_node({
         'id': '7',
-        'value': 0,
         'parents': {'6': 'L'}
     })
     tree.add_node({
         'id': '8',
-        'value': 0,
         'parents': {'6': 'P'}
     })
     tree.add_node({

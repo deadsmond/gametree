@@ -196,6 +196,17 @@ class GameTree:
         else:
             raise ValueError('mode variable is not "nodes" nor "moves"')
         return self._nodes[current_node]['value']
+
+    def get_income_for_leafs(self) -> dict:
+        """
+        return dictionary of income for leafs
+        """
+        # get leafs
+        self.calculate_leafs()
+        result = {}
+        for leaf in self._leafs:
+            result[leaf] = self._nodes[leaf]['value']
+        return result
     # ==================================================================================================================
 
 
@@ -294,3 +305,7 @@ if __name__ == '__main__':
         print('tree value for path\n%s\nis %s\n' % (path_, tree.get_income_for_path(path_)))
     except IndexError as e:
         print(e)
+
+    # get dictionary of income per leaf
+    print('\nvalues per leaf:')
+    print(json.dumps(tree.get_income_for_leafs(), indent=4))

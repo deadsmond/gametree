@@ -7,6 +7,7 @@ class GameTree:
     # ---------------------------------- OBJECT PROPERTIES -------------------------------------------------------------
     # procedure of printing object properties
     def __repr__(self):
+        """ return tree as JSON serialized dictionary """
         return json.dumps(self.__dict__, indent=4)
 
     # initialize object
@@ -79,7 +80,7 @@ class GameTree:
         # check if it is not overriding existing node
         if node.get('id') is not None:
             if node['id'] in self._nodes and not override:
-                raise ValueError('wrong id of node with no override permission')
+                raise ValueError('tried to override node %s without permission' % node['id'])
         else:
             raise ValueError('no id for node provided')
 
@@ -126,6 +127,25 @@ class GameTree:
         :param str to_: destination node for properties
         """
         self._nodes[to_] = dict(self._nodes[from_])
+
+    def change_node(self, node: dict):
+        """
+        change node method. Changes attributes provided in node dictionary
+
+        :param dict node: dictionary of node's data
+        """
+        # check if it is not overriding existing node
+        if node.get('id') is not None:
+            if node['id'] not in self._nodes:
+                raise ValueError('tried to change non-existing node %s' % node['id'])
+        else:
+            raise ValueError('no id for node provided')
+
+        # change attributes
+        id_ = node['id']
+        del node['id']
+        for attribute in node:
+            self._nodes[id_][attribute] = node[attribute]
 
     # ---------------------------------- OBJECT BASIC METHODS ----------------------------------------------------------
     @staticmethod
@@ -212,10 +232,7 @@ class GameTree:
 
 # EXAMPLE USAGE OF GAME TREE:
 if __name__ == '__main__':
-
-    # print documentation of class
-    help(GameTree)
-
+    # -------------------------------------------- INIT ----------------------------------------------------------------
     # plant a tree
     tree = GameTree()
     # add nodes
@@ -278,8 +295,30 @@ if __name__ == '__main__':
     # add groups
     tree.set_group(['1', '2'])
     tree.set_group(['7', '8'])
-
+    # -------------------------------------------- TESTS ---------------------------------------------------------------
     # tests:
+    # print documentation of class
+    help(GameTree)
+
+    # overwrite node - not accepted
+    try:
+        tree.add_node({
+            'id': '12',
+            'value': -300
+        })
+    except ValueError as e:
+        print(e, '\n')
+
+    # change node
+    tree.change_node({
+        'id': '12',
+        'value': -300
+    })
+    tree.change_node({
+        'id': '12',
+        'value': 3
+    })
+
     # print
     print('tree visualisation:\n%s\n' % tree)
 

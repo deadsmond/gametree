@@ -8,7 +8,12 @@ class GameTree:
     # procedure of printing object properties
     def __repr__(self):
         """ return tree as JSON serialized dictionary """
-        return json.dumps(self.__dict__, indent=4)
+        return self.pretty_print(self.__dict__)
+
+    @staticmethod
+    def pretty_print(dictionary: dict):
+        """ return pretty printed dictionary as JSON serialized object """
+        return json.dumps(dictionary, indent=4)
 
     # initialize object
     def __init__(self, nodes: dict = None, groups: list = None, leafs: list = None):
@@ -324,10 +329,15 @@ if __name__ == '__main__':
         print(e, '\n')
 
     # change node
+    tree.add_node({
+        'id': '12',
+        'value': -300
+    }, override=True)
     tree.change_node({
         'id': '12',
         'value': -300
     })
+    # reverse changes - for game purpose
     tree.change_node({
         'id': '12',
         'value': 3
@@ -361,4 +371,4 @@ if __name__ == '__main__':
 
     # get dictionary of income per leaf
     print('\nvalues per leaf:')
-    print(json.dumps(tree.get_income_for_leafs(), indent=4))
+    print(tree.pretty_print(tree.get_income_for_leafs()))

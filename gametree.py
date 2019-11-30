@@ -54,6 +54,7 @@ class GameTree:
         '''
         self._nodes = {
             'root': {
+                'player': '1',
                 'value': 0,
                 'parents': {},
                 'children': {},
@@ -61,7 +62,8 @@ class GameTree:
                 'branch': {
                     'value': 0,
                     'probability': 1
-                }
+                },
+                'depth': 0
             }
         } if nodes is None else nodes
         # list of lists of knowledge groups
@@ -89,6 +91,7 @@ class GameTree:
         del node['id']
 
         # set default values for node
+        node['player'] = '0' if node.get('player') is None else node['player']
         node['value'] = 0 if node.get('value') is None else node['value']
         node['parents'] = {} if node.get('parents') is None else node['parents']
         node['children'] = {} if node.get('children') is None else node['children']
@@ -102,6 +105,12 @@ class GameTree:
         for parent in node['parents']:
             # noinspection PyTypeChecker
             self._nodes[parent]['children'][id_] = str(node['parents'][parent])
+
+        # set depth to one more than first parent
+        if node['parents']:
+            node['depth'] = self._nodes[str(list(node['parents'].keys())[0])]['depth'] + 1
+        else:
+            node['depth'] = 0 if node['depth'] is None else node['depth']
 
         # calculate total probability of node:
         # total probability equals sum of probabilities of parents multiplied by probability of node
@@ -238,10 +247,12 @@ if __name__ == '__main__':
     # add nodes
     tree.add_node({
             'id': '1',
+            'player': '2',
             'parents': {'root': 'L'}
     })
     tree.add_node({
             'id': '2',
+            'player': '2',
             'parents': {'root': 'P'}
     })
     tree.add_node({
@@ -261,14 +272,17 @@ if __name__ == '__main__':
     })
     tree.add_node({
         'id': '6',
+        'player': '1',
         'parents': {'2': 'b'}
     })
     tree.add_node({
         'id': '7',
+        'player': '2',
         'parents': {'6': 'L'}
     })
     tree.add_node({
         'id': '8',
+        'player': '2',
         'parents': {'6': 'P'}
     })
     tree.add_node({

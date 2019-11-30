@@ -57,6 +57,8 @@ class GameTree:
                 probability : float
                     probability of reaching this node in game
         '''
+
+        # remember to add new attributes here and to add_node method default values setting
         self._nodes = {
             'root': {
                 'player': '1',
@@ -96,6 +98,7 @@ class GameTree:
         del node['id']
 
         # set default values for node
+        # remember to add new attributes here and in __init__ root node
         node['player'] = '0' if node.get('player') is None else node['player']
         node['value'] = 0 if node.get('value') is None else node['value']
         node['parents'] = {} if node.get('parents') is None else node['parents']
@@ -112,10 +115,11 @@ class GameTree:
             self._nodes[parent]['children'][id_] = str(node['parents'][parent])
 
         # set depth to one more than first parent
+        print(id_)
         if node['parents']:
             node['depth'] = self._nodes[str(list(node['parents'].keys())[0])]['depth'] + 1
         else:
-            node['depth'] = 0 if node['depth'] is None else node['depth']
+            node['depth'] = 0 if node.get('depth') is None else node['depth']
 
         # calculate total probability of node:
         # total probability equals sum of probabilities of parents multiplied by probability of node

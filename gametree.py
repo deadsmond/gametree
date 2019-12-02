@@ -115,7 +115,7 @@ class GameTree:
         if node['parents']:
             node['depth'] = self._nodes[str(list(node['parents'].keys())[0])]['depth'] + 1
         else:
-            node['depth'] = 0 if node['depth'] is None else node['depth']
+            node['depth'] = 0 if node.get('depth') is None else node['depth']
 
         # calculate total probability of node:
         # total probability equals sum of probabilities of parents multiplied by probability of node

@@ -1,4 +1,5 @@
 import json
+from operator import add
 
 
 # ======================================================================================================================
@@ -60,12 +61,11 @@ class GameTree:
         self._nodes = {
             'root': {
                 'player': '1',
-                'value': 0,
+                'value': [0, 0],
                 'parents': {},
                 'children': {},
                 'probability': 1,
                 'branch': {
-                    'value': 0,
                     'probability': 1
                 },
                 'depth': 0
@@ -97,12 +97,11 @@ class GameTree:
 
         # set default values for node
         node['player'] = '0' if node.get('player') is None else node['player']
-        node['value'] = 0 if node.get('value') is None else node['value']
+        node['value'] = [0, 0] if node.get('value') is None else node['value']
         node['parents'] = {} if node.get('parents') is None else node['parents']
         node['children'] = {} if node.get('children') is None else node['children']
         node['probability'] = 1 if node.get('probability') is None else node['probability']
         node['branch'] = {} if node.get('branch') is None else node['branch']
-        node['branch']['value'] = 0 if node['branch'].get('value') is None else node['branch']['value']
         node['branch']['probability'] = 0 \
             if node['branch'].get('probability') is None else node['branch']['probability']
 
@@ -123,12 +122,6 @@ class GameTree:
         for parent in node['parents']:
             branch_probability += self._nodes[parent]['branch']['probability']
         node['branch']['probability'] = branch_probability * node['probability']
-
-        # calculate total node's value - sum of all previous totals: TODO? does this make sense?
-        branch_value = 0
-        for parent in node['parents']:
-            branch_value += self._nodes[parent]['branch']['value']
-        node['branch']['value'] = branch_value + node['value']
 
         # add node
         self._nodes[id_] = node
@@ -197,16 +190,18 @@ class GameTree:
         return self._groups[:]
 
     # ---------------------------------- TREE CALCULATIONS -------------------------------------------------------------
-    def exp(self) -> float:
+    def exp(self) -> list:
         """ return expected value of tree """
         # collect leafs
         self.get_leafs()
 
-        exp = 0
+        exp = self._nodes['root']['value']
         # calculate expected value
         for leaf in self._leafs:
-            exp += self._nodes[leaf]['branch']['value'] * self._nodes[leaf]['branch']['probability']
-        return exp / len(self._leafs)
+            exp = list(map(add, exp,
+                           [x * self._nodes[leaf]['branch']['probability'] for x in self._nodes[leaf]['value']]
+                           ))
+        return [x / len(self._leafs) for x in exp]
 
     def get_income_for_path(self, path: list, mode: str = 'nodes') -> float:
         """
@@ -262,17 +257,17 @@ if __name__ == '__main__':
     })
     tree.add_node({
         'id': '3',
-        'value': 2,
+        'value': [2, 1],
         'parents': {'1': 'a'}
     })
     tree.add_node({
         'id': '4',
-        'value': 1,
+        'value': [1, -1],
         'parents': {'1': 'b'}
     })
     tree.add_node({
         'id': '5',
-        'value': 1,
+        'value': [1, 1],
         'parents': {'2': 'a'}
     })
     tree.add_node({
@@ -292,22 +287,22 @@ if __name__ == '__main__':
     })
     tree.add_node({
         'id': '9',
-        'value': 2,
+        'value': [2, 3],
         'parents': {'7': 'L'}
     })
     tree.add_node({
         'id': '10',
-        'value': 1,
+        'value': [1, 2],
         'parents': {'7': 'P'}
     })
     tree.add_node({
         'id': '11',
-        'value': -2,
+        'value': [-2, 3],
         'parents': {'8': 'L'}
     })
     tree.add_node({
         'id': '12',
-        'value': 3,
+        'value': [3, 3],
         'parents': {'8': 'P'}
     })
 
@@ -323,7 +318,7 @@ if __name__ == '__main__':
     try:
         tree.add_node({
             'id': '12',
-            'value': -300
+            'value': [-300, 0]
         })
     except ValueError as e:
         print(e, '\n')
@@ -331,16 +326,16 @@ if __name__ == '__main__':
     # change node
     tree.add_node({
         'id': '12',
-        'value': -300
+        'value': [-300, 0]
     }, override=True)
     tree.change_node({
         'id': '12',
-        'value': -300
+        'value': [-300, 0]
     })
     # reverse changes - for game purpose
     tree.change_node({
         'id': '12',
-        'value': 3
+        'value': [3, 3]
     })
 
     # print

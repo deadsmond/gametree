@@ -1,3 +1,9 @@
+"""
+Copyright 2019 by Adam Lewicki
+This file is part of the Game Theory library,
+and is released under the "MIT License Agreement". Please see the LICENSE
+file that should have been included as part of this package.
+"""
 import json
 from operator import add
 
@@ -59,7 +65,7 @@ class GameTree:
                     probability of reaching this node in game
         '''
 
-        # remember to add new attributes here and to add_node method default values setting
+        # remember to add new attributes to add_node method default values setting
         self._nodes = {
             'root': {
                 'player': '1',

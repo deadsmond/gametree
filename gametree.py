@@ -324,7 +324,7 @@ if __name__ == '__main__':
     # print documentation of class
     help(GameTree)
 
-    # overwrite node - not accepted
+    # overwrite node - not accepted: node exists, and override variable is false
     try:
         tree.add_node({
             'id': '12',
@@ -333,15 +333,18 @@ if __name__ == '__main__':
     except ValueError as e:
         print(e, '\n')
 
-    # change node
+    # change node with add method and true override
     tree.add_node({
         'id': '12',
         'value': [-300, 0]
     }, override=True)
+
+    # change node with change method
     tree.change_node({
         'id': '12',
         'value': [-300, 0]
     })
+
     # reverse changes - for game purpose
     tree.change_node({
         'id': '12',

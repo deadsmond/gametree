@@ -69,6 +69,14 @@ results in subcall of:
  (id of group, id of player owning the group, list of nodes in group)
 
         tree.set_group('A1', '1', [1', '2'])
+        
+* get information sets for tree:
+
+        tree.get_groups()
+        
+* get information sets for specific player ('1', for example):
+
+        tree.get_groups_of_player('1')
     
 * print documentation of class
     

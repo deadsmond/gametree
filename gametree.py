@@ -23,7 +23,7 @@ class GameTree:
         return json.dumps(dictionary, indent=4)
 
     # initialize object
-    def __init__(self, nodes: dict = None, groups: list = None, leafs: list = None):
+    def __init__(self, nodes: dict = None, groups: dict = None, leafs: list = None):
         """
         GameTree class used to represent game tree:
 
@@ -31,8 +31,8 @@ class GameTree:
         ----------
         nodes : dict
             dictionary of nodes;
-        groups : list
-            list of groups
+        groups : dict
+            dictionary of groups
         leafs : list
             list of leafs, calculated on demand
         """
@@ -79,23 +79,22 @@ class GameTree:
                 'depth': 0
             }
         } if nodes is None else nodes
-        # list of lists of knowledge groups
-        self._groups = [] if groups is None else groups
+        # dictionary of knowledge groups
+        self._groups = {} if groups is None else groups
         # dictionary of leafs
         self._leafs = [] if leafs is None else leafs
 
     # ---------------------------------- NODES -------------------------------------------------------------------------
-    def add_node(self, node: dict, override=False):
+    def add_node(self, node: dict):
         """
         add node method. Runs basic validation before adding.
 
         :param dict node: dictionary of node's data
-        :param bool override: control variable allowing to overwrite node
         """
         # check if it is not overriding existing node
         if node.get('id') is not None:
-            if node['id'] in self._nodes and not override:
-                raise ValueError('tried to override node %s without permission' % node['id'])
+            if node['id'] in self._nodes:
+                raise ValueError('tried to override node %s' % node['id'])
         else:
             raise ValueError('no id for node provided')
 
@@ -111,7 +110,7 @@ class GameTree:
         node['children'] = {} if node.get('children') is None else node['children']
         node['probability'] = 1 if node.get('probability') is None else node['probability']
         node['branch'] = {} if node.get('branch') is None else node['branch']
-        node['branch']['probability'] = 0 \
+        node['branch']['probability'] = 1 \
             if node['branch'].get('probability') is None else node['branch']['probability']
 
         # add parenthood
@@ -133,8 +132,40 @@ class GameTree:
             branch_probability += self._nodes[parent]['branch']['probability']
         node['branch']['probability'] = branch_probability * node['probability']
 
+        # validate against the error of node not being connected to the rest of the tree via parents removal:
+        if id_ is not 'root' and not node['parents']:
+            raise ValueError('node [%s] is not connected to the tree - parents are empty' % id_)
+
         # add node
         self._nodes[id_] = node
+
+    def add_vertex(self, id_: str, player: str, parents: dict):
+        """
+        add vertex from simplified function:
+
+        :param str id_: id of the node
+        :param str player: id of player owning the node
+        :param dict parents: dictionary of parents for the node
+        """
+        self.add_node({
+            'id': id_,
+            'player': player,
+            'parents': parents
+        })
+
+    def add_leaf(self, id_: str, value: list, parents: dict):
+        """
+        add leaf from simplified function:
+
+        :param str id_: id of the node
+        :param list value: list of node's values
+        :param dict parents: dictionary of parents for the node
+        """
+        self.add_node({
+            'id': id_,
+            'value': value,
+            'parents': parents
+        })
 
     def copy_node(self, from_: str, to_: str):
         """
@@ -188,16 +219,25 @@ class GameTree:
         return self._leafs[:]
 
     # -------------- GROUPS ------------
-    def set_group(self, group: list):
+    def set_group(self, id_: str, player: str, group: list):
         """
         add list of ids to new group
+        :param str id_: id of group
+        :param str player: id of player owning the group
         :param list group: list of id's you want to create group with
         """
-        self._groups.append(group)
+        self._groups[id_] = {
+            'player': player,
+            'group': group
+        }
 
-    def get_groups(self) -> list:
-        """ return list of groups """
-        return self._groups[:]
+    def get_groups(self) -> dict:
+        """ return dictionary of groups """
+        return dict(self._groups)
+
+    def get_groups_of_player(self, player: str) -> list:
+        """ return list of all groups id's where player is the owner """
+        return [group for group in self._groups if self._groups[group]['player'] == player]
 
     # ---------------------------------- TREE CALCULATIONS -------------------------------------------------------------
     def exp(self) -> list:
@@ -317,8 +357,8 @@ if __name__ == '__main__':
     })
 
     # add groups
-    tree.set_group(['1', '2'])
-    tree.set_group(['7', '8'])
+    tree.set_group('B1', '2', ['1', '2'])
+    tree.set_group('B2', '2', ['7', '8'])
     # -------------------------------------------- TESTS ---------------------------------------------------------------
     # tests:
     # print documentation of class
@@ -333,12 +373,6 @@ if __name__ == '__main__':
     except ValueError as e:
         print(e, '\n')
 
-    # change node with add method and true override
-    tree.add_node({
-        'id': '12',
-        'value': [-300, 0]
-    }, override=True)
-
     # change node with change method
     tree.change_node({
         'id': '12',
@@ -350,6 +384,12 @@ if __name__ == '__main__':
         'id': '12',
         'value': [3, 3]
     })
+
+    # get group for player 1 - empty list
+    print('\nget groups for player 1:\n%s' % tree.get_groups_of_player('1'))
+
+    # get group for player 2 - ['B1', 'B2']
+    print('\nget groups for player 2:\n%s\n' % tree.get_groups_of_player('2'))
 
     # print
     print('tree visualisation:\n%s\n' % tree)

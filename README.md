@@ -23,16 +23,37 @@ Any additional help can be called via `help(GameTree)` inside script or found in
             'parents': {'1': 'a'}
         })
         
-    This method will raise `ValueError`, if node with ID exists and `override=False`.
-    To overwrite existing node, please use:
+        
+This method will raise `ValueError`, if node with ID exists.
+To overwrite existing node, please method `change_node`.
+
+* add_vertex:
+
+Simplified version of add_node. Calling:
+
+    tree.add_vertex('12', '2', {'8' : 'P'})
+
+results in subcall of:
+
+    tree.add_node({
+        'id': '12',
+        'player':'2',
+        'parents': {'8': 'P'}
+    })
     
-        tree.add_node({
-            'id': '3',
-            'value': [2, 1],
-            'parents': {'1': 'a'}
-        }, override=True)
-   
-    or use method `change_node`.
+* add_leaf:
+
+Simplified version of add_node. Calling:
+
+    tree.add_leaf('12', [-7, 6], {'8' : 'P'})
+
+results in subcall of:
+
+    tree.add_node({
+        'id': '12',
+        'value': [-7, 6],
+        'parents': {'8': 'P'}
+    })
     
 * change node with change method:
 
@@ -44,14 +65,16 @@ Any additional help can be called via `help(GameTree)` inside script or found in
     Method will overwrite properties provided in dictionary, leaving other properties of node unchanged.
 
 * add information set:
+ 
+ (id of group, id of player owning the group, list of nodes in group)
 
-        tree.set_group(['1', '2'])
+        tree.set_group('A1', '1', [1', '2'])
     
 * print documentation of class
     
         help(GameTree)
 
-* get tree as jsonified text:
+* get tree as JSONified text:
 
         print(tree)
 

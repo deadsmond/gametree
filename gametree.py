@@ -23,7 +23,7 @@ class GameTree:
         return json.dumps(dictionary, indent=4)
 
     # initialize object
-    def __init__(self, nodes: dict = None, groups: dict = None, leafs: list = None):
+    def __init__(self, nodes: dict = None, groups: dict = None, leafs: list = None, players_list: list = None):
         """
         GameTree class used to represent game tree:
 
@@ -35,6 +35,8 @@ class GameTree:
             dictionary of groups
         leafs : list
             list of leafs, calculated on demand
+        players_list: list
+            list of players names, indicating which game income from list is connected to which player
         """
 
         '''
@@ -66,23 +68,18 @@ class GameTree:
         '''
 
         # remember to add new attributes to add_node method default values setting
-        self._nodes = {
-            'root': {
-                'player': '1',
-                'value': [0, 0],
-                'parents': {},
-                'children': {},
-                'probability': 1,
-                'branch': {
-                    'probability': 1
-                },
-                'depth': 0
-            }
-        } if nodes is None else nodes
+        self._nodes = {}
         # dictionary of knowledge groups
         self._groups = {} if groups is None else groups
         # dictionary of leafs
         self._leafs = [] if leafs is None else leafs
+        self._players_list = [] if players_list is None else players_list
+
+        # always add root
+        self.add_node({
+            'id': 'root',
+            'player': '1',
+        }) if nodes is None else nodes
 
     # ---------------------------------- NODES -------------------------------------------------------------------------
     def add_node(self, node: dict):
@@ -112,6 +109,10 @@ class GameTree:
         node['branch'] = {} if node.get('branch') is None else node['branch']
         node['branch']['probability'] = 1 \
             if node['branch'].get('probability') is None else node['branch']['probability']
+
+        # add player to the list of players if he is not there already
+        if node['player'] not in self._players_list:
+            self._players_list.append(node['player'])
 
         # add parenthood
         for parent in node['parents']:
@@ -208,6 +209,10 @@ class GameTree:
         else:
             raise ValueError('key with value %s does not exist in %s' % (val, obj))
 
+    def get_tree(self) -> dict:
+        """ return copy of tree nodes structure dict"""
+        return dict(self._nodes)
+
     # -------------- LEAFS -------------
     def calculate_leafs(self):
         """ calculate inner list of leafs ids """
@@ -285,6 +290,52 @@ class GameTree:
         for leaf in self._leafs:
             result[leaf] = self._nodes[leaf]['value']
         return result
+
+    def reversed_analysis(self):
+        """ return optimal strategy for both players and path leading to optimal leaf """
+
+        def _get_best_value_for_node(id_: str):
+            """ return list of id of node with best value for player and the value itself """
+            max_value = []
+            for child in list(self._nodes[id_]['children']):
+                max_value.append([
+                    child,
+                    self._nodes[child]['value'][self.get_player_index(id_)]
+                ])
+
+            return [list(self._nodes[id_]['parents'].keys())[0], self._nodes[id_]['value'][self.get_player_index(id_)]] \
+                if not max_value else [list(self._nodes[id_]['parents'].keys())[0], max(max_value, key=lambda x: x[-1])]
+
+        # get leafs
+        self.calculate_leafs()
+
+        # fill list of parents of leafs
+        nodes = []
+
+        for leaf in self.get_leafs():
+            for parent in self._nodes[leaf]['parents']:
+                if parent not in nodes:
+                    nodes.append(parent)
+
+        # move leafs to parents
+        for leaf in nodes:
+            nodes[nodes.index(leaf)] = _get_best_value_for_node(leaf)
+
+        # TODO: move nodes to root
+        for node in nodes:
+            parent = list(self._nodes[node[0]]['parents'])[0] if node[0] is not 'root' else 'root'
+            print(node, parent)
+            print(nodes)
+            # change previous value for list of value and new parent
+            nodes[nodes.index(node)][-1] = _get_best_value_for_node(parent)
+            nodes[nodes.index(node)] = [item for sublist in nodes[nodes.index(node)] for item in sublist]
+
+        return nodes
+        # return max(nodes, key=lambda x: x[-1])
+
+    def get_player_index(self, id_):
+        return self._players_list.index(self._nodes[id_]['player'])
+
     # ==================================================================================================================
 
 
@@ -419,3 +470,5 @@ if __name__ == '__main__':
     # get dictionary of income per leaf
     print('\nvalues per leaf:')
     print(tree.pretty_print(tree.get_income_for_leafs()))
+
+    print('\nreversed analysis:\n%s' % tree.reversed_analysis())

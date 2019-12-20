@@ -101,6 +101,8 @@ results in subcall of:
 
 ### Income
 
+**WARNING** - this section is experimental as it has not been checked and proved mathematically.
+
 GameTree provides function for the return of income for players - `get_income_for_path`.
 This method contains two arguments: path and mode for search. Mode can have two values: `nodes` or `moves`.
 `nodes` allows to search via nodes IDs, and moves - via player's choices.

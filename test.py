@@ -1,5 +1,5 @@
 # test script
-from gametree import GameTree
+from gametree_lite import GameTree
 
 
 if __name__ == '__main__':
@@ -14,7 +14,5 @@ if __name__ == '__main__':
         'value': [1, 2],
         'parents': {'A': 'P'}
     })
-    print(tree)
-
     tree.calculate_leafs()
     print(tree.get_leafs())

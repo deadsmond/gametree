@@ -215,7 +215,7 @@ class GameTree:
         self._leafs = [node for node in self._nodes if not self._nodes[node]['children']]
 
     def get_leafs(self) -> list:
-        """ return list of leafs ids """
+        """ return list of leafs ids. Will return empty list, if calculate_leafs() has not been called earlier. """
         return self._leafs[:]
 
     # -------------- GROUPS ------------

@@ -95,17 +95,13 @@ results in subcall of:
     
         print(tree.get_leafs())
 
-* get expected value of tree:
-
-        print(tree.exp())
-
 ### Income
 
 **WARNING** - this section is experimental as it has not been checked and proved mathematically.
 
 GameTree provides function for the return of income for players - `get_income_for_path`.
 This method contains two arguments: path and mode for search. Mode can have two values: `nodes` or `moves`.
-`nodes` allows to search via nodes IDs, and moves - via player's choices.
+`nodes` allows to search via nodes IDs, moves - via player's choices.
 
 Default mode value is `nodes`.
 
@@ -136,4 +132,32 @@ Method will raise `IndexError`, if there is no connection between nodes in provi
 * get dictionary of income per leaf
 
         print(tree.get_income_for_leafs())
+        
+### Solving game
+
+* get expected value of tree:
+
+        print(tree.exp())
+
+* get game optimal path and result via reversed analysis
+
+        print(tree.reversed_analysis())
+        
+This method contains argument 'mode' for search. 
+Mode can have two values: `nodes` or `moves`. `nodes` returns path via nodes IDs, `moves` - via player's choices.
+
+Default mode value is `nodes`.
+
+---
+# Warnings
+
+Due to the lack of required support, minor differences between README file 
+and actual state of GameTree may appear.
+
+Please keep in mind that not all functions had been explained in README.
+
+We are sorry for any inconvenience.
+
+---
+*Adam Lewicki, December 2019*
 

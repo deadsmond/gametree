@@ -196,6 +196,38 @@ class GameTree:
             self._nodes[id_][attribute] = node[attribute]
 
     # ---------------------------------- OBJECT BASIC METHODS ----------------------------------------------------------
+    def get_parent(self, id_) -> str:
+        """ get id of the parent node """
+        return list(self._nodes[id_]['parents'].keys())[0]
+
+    def get_player_index(self, id_) -> int:
+        """ return player index from players list order """
+        return self._players_list.index(self._nodes[id_]['player'])
+
+    def get_path_to_node(self, id_: str, mode: str = 'nodes') -> list:
+        """
+        get path from root to the node
+        :param str id_: id of the node you want to reach from root
+        :param str mode: mode of return type, 'nodes' - make path with nodes id, 'moves' - make path with player choices
+        """
+
+        path_t = []
+        node = id_
+
+        while node is not 'root':
+            if mode == 'nodes':
+                path_t.insert(0, node)
+            elif mode == 'moves':
+                parent_ = self.get_parent(node)
+                path_t.insert(0, self._nodes[parent_]['children'][node])
+            else:
+                raise ValueError('mode variable is not "nodes" nor "moves"')
+            node = self.get_parent(node)
+
+        if mode == 'nodes':
+            path_t.insert(0, 'root')
+        return path_t
+
     @staticmethod
     def _get_key(obj: dict, val: str) -> list:
         """
@@ -291,20 +323,16 @@ class GameTree:
             result[leaf] = self._nodes[leaf]['value']
         return result
 
-    def reversed_analysis(self):
-        """ return optimal strategy for both players and path leading to optimal leaf """
+    def reversed_analysis(self, mode: str = 'nodes') -> list:
+        """ return list of path leading to optimal leaf and its value for players """
 
-        def _get_best_value_for_node(id_: str):
-            """ return list of id of node with best value for player and the value itself """
-            max_value = []
-            for child in list(self._nodes[id_]['children']):
-                max_value.append([
-                    child,
-                    self._nodes[child]['value'][self.get_player_index(id_)]
-                ])
-
-            return [list(self._nodes[id_]['parents'].keys())[0], self._nodes[id_]['value'][self.get_player_index(id_)]] \
-                if not max_value else [list(self._nodes[id_]['parents'].keys())[0], max(max_value, key=lambda x: x[-1])]
+        def _get_best_value_for_node(node_: list):
+            id_ = node_[0]
+            if self._nodes[id_]['parents']:
+                parent_ = self.get_parent(id_)
+            else:
+                parent_ = node_[0]
+            return [parent_, max(node_[1:], key=lambda x: x[self.get_player_index(id_)])]
 
         # get leafs
         self.calculate_leafs()
@@ -315,27 +343,37 @@ class GameTree:
         for leaf in self.get_leafs():
             for parent in self._nodes[leaf]['parents']:
                 if parent not in nodes:
-                    nodes.append(parent)
+                    nodes.append([parent, self._nodes[leaf]['value']])
 
-        # move leafs to parents
-        for leaf in nodes:
-            nodes[nodes.index(leaf)] = _get_best_value_for_node(leaf)
+        # while the list is not reduced to root
+        while len(nodes) > 1:
 
-        # TODO: move nodes to root
-        for node in nodes:
-            parent = list(self._nodes[node[0]]['parents'])[0] if node[0] is not 'root' else 'root'
-            print(node, parent)
-            print(nodes)
-            # change previous value for list of value and new parent
-            nodes[nodes.index(node)][-1] = _get_best_value_for_node(parent)
-            nodes[nodes.index(node)] = [item for sublist in nodes[nodes.index(node)] for item in sublist]
+            # sort list of lists of nodes and their achieveable values
+            nodes.sort(key=lambda x: x[0])
 
-        return nodes
-        # return max(nodes, key=lambda x: x[-1])
+            # collect leafs coming from one node into one list
+            previous_id = nodes[0][0]
+            collection = [[previous_id]]
+            for node in nodes:
+                if node[0] is previous_id:
+                    collection[-1].append(node[-1])
+                else:
+                    collection.append(node)
+                previous_id = node[0]
 
-    def get_player_index(self, id_):
-        return self._players_list.index(self._nodes[id_]['player'])
+            # select best value for each node and move upward
+            for node in collection:
+                collection[collection.index(node)] = _get_best_value_for_node(node)
 
+            # replace old list with updated list
+            nodes = collection[:]
+
+        # return path to the best node and value of it
+        dict_ = self.get_income_for_leafs()
+        return [self.get_path_to_node(
+            list(dict_.keys())[list(dict_.values()).index(nodes[0][-1])], mode=mode),
+            nodes[0][-1]
+        ]
     # ==================================================================================================================
 
 
@@ -471,4 +509,6 @@ if __name__ == '__main__':
     print('\nvalues per leaf:')
     print(tree.pretty_print(tree.get_income_for_leafs()))
 
-    print('\nreversed analysis:\n%s' % tree.reversed_analysis())
+    # get reversed analysis
+    print('\nreversed analysis with nodes as path:\n%s' % tree.reversed_analysis(mode='nodes'))
+    print('\nreversed analysis with moves as path:\n%s' % tree.reversed_analysis(mode='moves'))

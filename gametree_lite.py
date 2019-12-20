@@ -4,14 +4,25 @@ This file is part of the Game Theory library,
 and is released under the "MIT License Agreement". Please see the LICENSE
 file that should have been included as part of this package.
 """
+import json
 
 
 # ======================================================================================================================
 # game tree object
 class GameTree:
+    # ---------------------------------- OBJECT PROPERTIES -------------------------------------------------------------
+    # procedure of printing object properties
+    def __repr__(self):
+        """ return tree as JSON serialized dictionary """
+        return self.pretty_print(self.__dict__)
+
+    @staticmethod
+    def pretty_print(dictionary: dict):
+        """ return pretty printed dictionary as JSON serialized object """
+        return json.dumps(dictionary, indent=4)
 
     # initialize object
-    def __init__(self, nodes: dict = None, groups: dict = None, leafs: list = None):
+    def __init__(self, nodes: dict = None, groups: dict = None, leafs: list = None, players_list: list = None):
         """
         GameTree class used to represent game tree:
 
@@ -23,6 +34,8 @@ class GameTree:
             dictionary of groups
         leafs : list
             list of leafs, calculated on demand
+        players_list: list
+            list of players names, indicating which game income from list is connected to which player
         """
 
         '''
@@ -54,23 +67,18 @@ class GameTree:
         '''
 
         # remember to add new attributes to add_node method default values setting
-        self._nodes = {
-            'root': {
-                'player': '1',
-                'value': [0, 0],
-                'parents': {},
-                'children': {},
-                'probability': 1,
-                'branch': {
-                    'probability': 1
-                },
-                'depth': 0
-            }
-        } if nodes is None else nodes
+        self._nodes = {}
         # dictionary of knowledge groups
         self._groups = {} if groups is None else groups
         # dictionary of leafs
         self._leafs = [] if leafs is None else leafs
+        self._players_list = [] if players_list is None else players_list
+
+        # always add root
+        self.add_node({
+            'id': 'root',
+            'player': '1',
+        }) if nodes is None else nodes
 
     # ---------------------------------- NODES -------------------------------------------------------------------------
     def add_node(self, node: dict):
@@ -100,6 +108,10 @@ class GameTree:
         node['branch'] = {} if node.get('branch') is None else node['branch']
         node['branch']['probability'] = 1 \
             if node['branch'].get('probability') is None else node['branch']['probability']
+
+        # add player to the list of players if he is not there already
+        if node['player'] not in self._players_list:
+            self._players_list.append(node['player'])
 
         # add parenthood
         for parent in node['parents']:
@@ -183,6 +195,38 @@ class GameTree:
             self._nodes[id_][attribute] = node[attribute]
 
     # ---------------------------------- OBJECT BASIC METHODS ----------------------------------------------------------
+    def get_parent(self, id_) -> str:
+        """ get id of the parent node """
+        return list(self._nodes[id_]['parents'].keys())[0]
+
+    def get_player_index(self, id_) -> int:
+        """ return player index from players list order """
+        return self._players_list.index(self._nodes[id_]['player'])
+
+    def get_path_to_node(self, id_: str, mode: str = 'nodes') -> list:
+        """
+        get path from root to the node
+        :param str id_: id of the node you want to reach from root
+        :param str mode: mode of return type, 'nodes' - make path with nodes id, 'moves' - make path with player choices
+        """
+
+        path_t = []
+        node = id_
+
+        while node is not 'root':
+            if mode == 'nodes':
+                path_t.insert(0, node)
+            elif mode == 'moves':
+                parent_ = self.get_parent(node)
+                path_t.insert(0, self._nodes[parent_]['children'][node])
+            else:
+                raise ValueError('mode variable is not "nodes" nor "moves"')
+            node = self.get_parent(node)
+
+        if mode == 'nodes':
+            path_t.insert(0, 'root')
+        return path_t
+
     @staticmethod
     def _get_key(obj: dict, val: str) -> list:
         """
@@ -195,6 +239,10 @@ class GameTree:
             return sublist
         else:
             raise ValueError('key with value %s does not exist in %s' % (val, obj))
+
+    def get_tree(self) -> dict:
+        """ return copy of tree nodes structure dict"""
+        return dict(self._nodes)
 
     # -------------- LEAFS -------------
     def calculate_leafs(self):
@@ -225,3 +273,4 @@ class GameTree:
     def get_groups_of_player(self, player: str) -> list:
         """ return list of all groups id's where player is the owner """
         return [group for group in self._groups if self._groups[group]['player'] == player]
+    # ==================================================================================================================
